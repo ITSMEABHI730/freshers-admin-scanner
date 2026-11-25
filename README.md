@@ -1,0 +1,1 @@
+# freshers-admin-scanner
