@@ -2,75 +2,221 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Freshers Admin Scanner</title>
-<script src="https://unpkg.com/html5-qrcode"></script>
-<style>
-body {
-  background:#11100f;
-  color:#d9b66d;
-  font-family:Arial;
-  text-align:center;
-  padding:20px;
-}
-#reader {
-  width:100%;
-  max-width:400px;
-  margin:25px auto;
-  background:white;
-  border-radius:12px;
-  overflow:hidden;
-}
-button {
-  background:#b8860b;
-  color:black;
-  border:0;
-  padding:15px 25px;
-  border-radius:8px;
-  font-weight:bold;
-  font-size:16px;
-}
-#result {
-  margin-top:20px;
-  padding:18px;
-  border:1px solid #b8860b;
-  border-radius:10px;
-}
-</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Freshers Admin Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      background: #11100f;
+      color: #d9b66d;
+      font-family: Arial;
+      text-align: center;
+      padding: 20px;
+    }
+    #reader {
+      max-width: 400px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    button, input {
+      padding: 14px;
+      border-radius: 8px;
+      margin: 8px;
+      font-size: 16px;
+    }
+    button {
+      background: #b8860b;
+      border: 0;
+      font-weight: bold;
+    }
+    input {
+      width: 80%;
+      max-width: 280px;
+    }
+    #result {
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+      border: 1px solid #b8860b;
+      border-radius: 10px;
+      padding: 18px;
+      margin-top: 20px;
+    }
+  </style>
 </head>
+
 <body>
+  <h2>FRESHERS PARTY 2026-27</h2>
+  <h3>ADMIN QR SCANNER</h3>
 
-<h1>FRESHERS PARTY 2026-27</h1>
-<h3>ADMIN QR SCANNER</h3>
+  <div id="reader"></div>
 
-<div id="reader"></div>
+  <button onclick="startScanner()">START SCANNER</button>
 
-<button onclick="startScanner()">START SCANNER</button>
+  <div id="result">Scan a student QR code.</div>
 
-<div id="result">Scanner start karne ke liye button dabao.</div>
+  <div id="studentActions" style="display:none">
+    <p>Admin PIN</p>
+    <input id="pin" type="password" inputmode="numeric"
+      placeholder="Enter admin PIN">
+    <br>
+    <button onclick="grantEntry()">ENTRY GRANTED</button>
+  </div>
 
 <script>
+const API_URL =
+"https://script.google.com/macros/s/AKfycbz461TM6anPfciicFiJPloTFHpKVqi4xx-FwcYVlIA445UHnmcmm-jTu862iqcLgeGsPQ/exec";
+
 let scanner;
+let currentToken = "";
+let busy = false;
+
+function apiCall(action, token, pin = "") {
+  return new Promise((resolve, reject) => {
+    const callback = "freshersCallback_" + Date.now();
+
+    const script = document.createElement("script");
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error("Server timeout"));
+    }, 15000);
+
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[callback];
+      script.remove();
+    }
+
+    window[callback] = data => {
+      cleanup();
+      resolve(data);
+    };
+
+    const url = new URL(API_URL);
+    url.searchParams.set("action", action);
+    url.searchParams.set("token", token);
+    url.searchParams.set("callback", callback);
+
+    if (pin) url.searchParams.set("pin", pin);
+
+    script.src = url.toString();
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("Server connection failed"));
+    };
+
+    document.body.appendChild(script);
+  });
+}
 
 async function startScanner() {
-  const result = document.getElementById("result");
-
   try {
-    scanner = new Html5Qrcode("reader");
+    document.getElementById("studentActions").style.display = "none";
+    document.getElementById("result").innerText = "Starting camera...";
+
+    if (!scanner) {
+      scanner = new Html5Qrcode("reader");
+    }
 
     await scanner.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: 250 },
-      async (decodedText) => {
-        result.innerText = "QR SCANNED: " + decodedText;
+      async decodedText => {
+        if (busy) return;
+        busy = true;
+
+        currentToken = decodedText;
         await scanner.stop();
+
+        document.getElementById("result").innerText =
+          "Checking ticket...";
+
+        try {
+          const data = await apiCall("verify", currentToken);
+
+          if (!data.found) {
+            document.getElementById("result").innerText =
+              "INVALID QR CODE";
+            currentToken = "";
+            busy = false;
+            return;
+          }
+
+          if (data.status === "Granted") {
+            document.getElementById("result").innerText =
+              "ALREADY USED\nStudent: " + data.name;
+            currentToken = "";
+            busy = false;
+            return;
+          }
+
+          if (data.status !== "Pending") {
+            document.getElementById("result").innerText =
+              "TICKET NOT ELIGIBLE";
+            currentToken = "";
+            busy = false;
+            return;
+          }
+
+          document.getElementById("result").innerText =
+            "VALID TICKET\n\n" +
+            "Name: " + data.name + "\n" +
+            "Roll: " + data.roll + "\n" +
+            "Year: " + data.year + "\n" +
+            "Branch: " + data.branch;
+
+          document.getElementById("studentActions").style.display =
+            "block";
+
+        } catch (error) {
+          document.getElementById("result").innerText = error.message;
+          currentToken = "";
+          busy = false;
+        }
       }
     );
-  } catch(error) {
-    result.innerText = "Camera Error: " + error.message;
+
+  } catch (error) {
+    document.getElementById("result").innerText =
+      "Camera error: " + error.message;
+    busy = false;
+  }
+}
+
+async function grantEntry() {
+  if (!currentToken) return;
+
+  const pin = document.getElementById("pin").value;
+
+  if (!pin) {
+    alert("Admin PIN enter karo");
+    return;
+  }
+
+  document.getElementById("result").innerText =
+    "Saving entry...";
+
+  try {
+    const data = await apiCall("grant", currentToken, pin);
+
+    document.getElementById("result").innerText =
+      data.message;
+
+    if (data.success) {
+      document.getElementById("pin").value = "";
+      document.getElementById("studentActions").style.display =
+        "none";
+    }
+
+    currentToken = "";
+    busy = false;
+
+  } catch (error) {
+    document.getElementById("result").innerText = error.message;
   }
 }
 </script>
-
 </body>
 </html>
