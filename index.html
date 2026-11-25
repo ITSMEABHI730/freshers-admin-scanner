@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Freshers Admin Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      background: #11100f;
+      color: #d9b66d;
+      font-family: Arial;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 { font-size: 25px; }
+
+    #reader {
+      max-width: 400px;
+      margin: 25px auto;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    button {
+      background: #b8860b;
+      color: black;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 18px;
+      border: 1px solid #b8860b;
+      border-radius: 10px;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>FRESHERS PARTY 2026-27</h1>
+  <h3>ADMIN QR SCANNER</h3>
+
+  <div id="reader"></div>
+
+  <button onclick="startScanner()">START SCANNER</button>
+
+  <div id="result">Scanner start karne ke liye button dabao.</div>
+
+  <script>
+    let scanner;
+    let started = false;
+
+    async function startScanner() {
+      const result = document.getElementById("result");
+
+      try {
+        if (started) return;
+
+        scanner = new Html5Qrcode("reader");
+
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: 250 },
+          async (decodedText) => {
+            result.innerText = "QR SCANNED SUCCESSFULLY!";
+            await scanner.stop();
+            started = false;
+          }
+        );
+
+        started = true;
+
+      } catch (error) {
+        result.innerText = "Camera Error: " + error.message;
+      }
+    }
+  </script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Freshers Admin Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      background: #11100f;
+      color: #d9b66d;
+      font-family: Arial;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 { font-size: 25px; }
+
+    #reader {
+      max-width: 400px;
+      margin: 25px auto;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    button {
+      background: #b8860b;
+      color: black;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 18px;
+      border: 1px solid #b8860b;
+      border-radius: 10px;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>FRESHERS PARTY 2026-27</h1>
+  <h3>ADMIN QR SCANNER</h3>
+
+  <div id="reader"></div>
+
+  <button onclick="startScanner()">START SCANNER</button>
+
+  <div id="result">Scanner start karne ke liye button dabao.</div>
+
+  <script>
+    let scanner;
+    let started = false;
+
+    async function startScanner() {
+      const result = document.getElementById("result");
+
+      try {
+        if (started) return;
+
+        scanner = new Html5Qrcode("reader");
+
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: 250 },
+          async (decodedText) => {
+            result.innerText = "QR SCANNED SUCCESSFULLY!";
+            await scanner.stop();
+            started = false;
+          }
+        );
+
+        started = true;
+
+      } catch (error) {
+        result.innerText = "Camera Error: " + error.message;
+      }
+    }
+  </script>
+</body>
+</html>
